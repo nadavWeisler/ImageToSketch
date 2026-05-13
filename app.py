@@ -40,6 +40,7 @@ def _render_home(**context: object) -> str:
         "scope_label": app.config["PRODUCT_SCOPE"],
         "supported_formats": ", ".join(sorted(app.config["ALLOWED_EXTENSIONS"])),
         "max_upload_mb": app.config["MAX_CONTENT_LENGTH"] // (1024 * 1024),
+        "empty_preview": "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==",
         "form_values": _default_form_values(),
         "error_message": None,
         "original_preview": None,
@@ -166,7 +167,7 @@ def health():
 
 
 @app.errorhandler(RequestEntityTooLarge)
-def handle_request_entity_too_large(error: RequestEntityTooLarge):
+def handle_request_entity_too_large(_error: RequestEntityTooLarge):
     message = (
         f"Upload too large. The maximum file size is {app.config['MAX_CONTENT_LENGTH'] // (1024 * 1024)} MB."
     )

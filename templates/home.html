@@ -249,7 +249,7 @@
                 <h2>Original preview</h2>
                 <img
                     id="original-preview"
-                    src="{{ original_preview or 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==' }}"
+                    src="{{ original_preview or empty_preview }}"
                     alt="Original upload preview"
                 >
                 <p class="footer-note">Preview updates when you select a file, even before conversion.</p>
@@ -261,7 +261,7 @@
                     <img src="{{ sketch_preview }}" alt="Generated sketch preview">
                 {% else %}
                     <img
-                        src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+                        src="{{ empty_preview }}"
                         alt="Generated sketch preview placeholder"
                     >
                 {% endif %}
