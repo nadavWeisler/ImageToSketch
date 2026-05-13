@@ -27,9 +27,9 @@ ImageToSketch is a local-first Flask application and lightweight deployable web 
 
 The repository includes sample images you can use while testing locally:
 
-- `/home/runner/work/ImageToSketch/ImageToSketch/1.jpg`
-- `/home/runner/work/ImageToSketch/ImageToSketch/2.jpg`
-- `/home/runner/work/ImageToSketch/ImageToSketch/3.jpeg`
+- `./1.jpg`
+- `./2.jpg`
+- `./3.jpeg`
 
 ## Setup
 

@@ -58,6 +58,7 @@ def _decode_image(image_bytes: bytes) -> np.ndarray:
 
 
 def _sharpen_kernel(amount: float) -> np.ndarray:
+    # Keep the kernel sum at 1 so sharpening boosts edges without shifting overall brightness.
     return np.array(
         [[0.0, -amount, 0.0], [-amount, 1.0 + (4.0 * amount), -amount], [0.0, -amount, 0.0]],
         dtype=np.float32,

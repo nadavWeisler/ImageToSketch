@@ -143,8 +143,8 @@ def api_sketch():
         image_bytes, original_name = _read_upload()
         options = _parse_sketch_options(request.form)
         sketch_bytes, mimetype, output_format = convert_image_bytes_to_sketch(image_bytes, options)
-    except ValueError as exc:
-        return jsonify({"error": str(exc)}), 400
+    except ValueError:
+        return jsonify({"error": "Invalid request. Check the file type and sketch settings."}), 400
     return send_file(
         BytesIO(sketch_bytes),
         mimetype=mimetype,
@@ -166,7 +166,7 @@ def health():
 
 
 @app.errorhandler(RequestEntityTooLarge)
-def handle_request_entity_too_large(_: RequestEntityTooLarge):
+def handle_request_entity_too_large(error: RequestEntityTooLarge):
     message = (
         f"Upload too large. The maximum file size is {app.config['MAX_CONTENT_LENGTH'] // (1024 * 1024)} MB."
     )
