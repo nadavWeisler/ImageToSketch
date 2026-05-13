@@ -11,7 +11,6 @@ import __data__ as data
 from config import Config
 from utils import (
     SketchOptions,
-    SUPPORTED_INPUT_EXTENSIONS,
     build_data_uri,
     convert_image_bytes_to_sketch,
     is_supported_extension,
@@ -140,9 +139,12 @@ def home() -> str:
 
 @app.post("/api/sketch")
 def api_sketch():
-    image_bytes, original_name = _read_upload()
-    options = _parse_sketch_options(request.form)
-    sketch_bytes, mimetype, output_format = convert_image_bytes_to_sketch(image_bytes, options)
+    try:
+        image_bytes, original_name = _read_upload()
+        options = _parse_sketch_options(request.form)
+        sketch_bytes, mimetype, output_format = convert_image_bytes_to_sketch(image_bytes, options)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
     return send_file(
         BytesIO(sketch_bytes),
         mimetype=mimetype,
