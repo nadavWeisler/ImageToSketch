@@ -2,30 +2,298 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{title}}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        :root {
+            color-scheme: light;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: #f3f6fb;
+            color: #122033;
+        }
+
+        .page {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 24px 16px 40px;
+        }
+
+        .hero,
+        .panel,
+        .preview-card {
+            background: #ffffff;
+            border-radius: 18px;
+            box-shadow: 0 12px 36px rgba(18, 32, 51, 0.08);
+        }
+
+        .hero {
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .hero h1 {
+            margin-top: 0;
+            margin-bottom: 12px;
+        }
+
+        .hero-grid,
+        .options-grid,
+        .preview-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .hero-grid,
+        .preview-grid {
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        }
+
+        .panel {
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .options-grid {
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            margin-top: 18px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        input,
+        select,
+        button {
+            width: 100%;
+            box-sizing: border-box;
+            border-radius: 12px;
+            border: 1px solid #c7d2e2;
+            padding: 12px;
+            font-size: 1rem;
+        }
+
+        input:focus,
+        select:focus,
+        button:focus {
+            outline: 2px solid #4e7cff;
+            outline-offset: 1px;
+        }
+
+        .hint,
+        .scope,
+        .status {
+            color: #4d5a6b;
+            font-size: 0.95rem;
+        }
+
+        .error {
+            background: #fff1f1;
+            border: 1px solid #ffc5c5;
+            color: #a12626;
+            padding: 12px 14px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        button,
+        .download-link {
+            background: #1f5eff;
+            color: #ffffff;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+        }
+
+        button[disabled] {
+            background: #7f9df3;
+            cursor: progress;
+        }
+
+        .download-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 48px;
+            padding: 0 18px;
+        }
+
+        .preview-card {
+            padding: 18px;
+        }
+
+        .preview-card img {
+            width: 100%;
+            max-height: 360px;
+            object-fit: contain;
+            border-radius: 14px;
+            background: #edf2f9;
+        }
+
+        .footer-note {
+            margin-top: 12px;
+            font-size: 0.92rem;
+            color: #607086;
+        }
+
+        @media (max-width: 640px) {
+            .page {
+                padding: 16px 12px 28px;
+            }
+
+            .hero,
+            .panel,
+            .preview-card {
+                padding: 18px;
+                border-radius: 14px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <form name="input_form" method="post" enctype=multipart/form-data>
-        <div class="form-group">
-            <h1 class="page-header">Upload Image</h1>
-            <div>
-                <label for="imagesInput">
-                    Choose Image
-                    <input type="file"
-                           name="imagesInput"
-                           id="imagesInput"
-                           accept=".jpg"
-                           class="custom-file-control"
-                           multiple
-                    />
-                </label>
+    <main class="page">
+        <section class="hero">
+            <h1>ImageToSketch</h1>
+            <p class="scope">{{ scope_label }}</p>
+            <div class="hero-grid">
+                <div>
+                    <strong>Supported uploads</strong>
+                    <p class="hint">{{ supported_formats|upper }}</p>
+                </div>
+                <div>
+                    <strong>Upload limit</strong>
+                    <p class="hint">{{ max_upload_mb }} MB per image</p>
+                </div>
+                <div>
+                    <strong>Output formats</strong>
+                    <p class="hint">JPG and PNG downloads</p>
+                </div>
             </div>
-            <div>
-                <button class="btn btn-primary btn-lg btn-block" type="submit">
-                    Submit
-                </button>
-            </div>
-        </div>
-    </form>
+        </section>
+
+        <section class="panel">
+            {% if error_message %}
+                <div class="error">{{ error_message }}</div>
+            {% endif %}
+
+            <form id="sketch-form" method="post" enctype="multipart/form-data">
+                <div>
+                    <label for="image">Upload image</label>
+                    <input
+                        type="file"
+                        name="image"
+                        id="image"
+                        accept=".jpg,.jpeg,.png"
+                        required
+                    >
+                    <p class="hint">Pick a JPG or PNG image. A live preview appears before conversion.</p>
+                </div>
+
+                <div class="options-grid">
+                    <div>
+                        <label for="scale_percent">Resize percentage</label>
+                        <input type="number" name="scale_percent" id="scale_percent" min="10" max="100" value="{{ form_values.scale_percent }}">
+                    </div>
+                    <div>
+                        <label for="blur_size">Blur size</label>
+                        <input type="number" name="blur_size" id="blur_size" min="1" max="51" value="{{ form_values.blur_size }}">
+                    </div>
+                    <div>
+                        <label for="sharpen_amount">Sharpen amount</label>
+                        <input type="number" step="0.1" name="sharpen_amount" id="sharpen_amount" min="0" max="5" value="{{ form_values.sharpen_amount }}">
+                    </div>
+                    <div>
+                        <label for="contrast">Grayscale contrast</label>
+                        <input type="number" step="0.1" name="contrast" id="contrast" min="0.5" max="3" value="{{ form_values.contrast }}">
+                    </div>
+                    <div>
+                        <label for="brightness">Grayscale brightness</label>
+                        <input type="number" name="brightness" id="brightness" min="-100" max="100" value="{{ form_values.brightness }}">
+                    </div>
+                    <div>
+                        <label for="output_format">Download format</label>
+                        <select name="output_format" id="output_format">
+                            <option value="jpg" {% if form_values.output_format == "jpg" %}selected{% endif %}>JPG</option>
+                            <option value="png" {% if form_values.output_format == "png" %}selected{% endif %}>PNG</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button id="submit-button" type="submit">Create sketch</button>
+                    {% if conversion_ready %}
+                        <a class="download-link" href="{{ sketch_preview }}" download="{{ download_name }}">Download {{ download_name }}</a>
+                    {% endif %}
+                </div>
+
+                <p id="status-message" class="status" aria-live="polite"></p>
+            </form>
+        </section>
+
+        <section class="preview-grid">
+            <article class="preview-card">
+                <h2>Original preview</h2>
+                <img
+                    id="original-preview"
+                    src="{{ original_preview or empty_preview }}"
+                    alt="Original upload preview"
+                >
+                <p class="footer-note">Preview updates when you select a file, even before conversion.</p>
+            </article>
+
+            <article class="preview-card">
+                <h2>Sketch preview</h2>
+                {% if sketch_preview %}
+                    <img src="{{ sketch_preview }}" alt="Generated sketch preview">
+                {% else %}
+                    <img
+                        src="{{ empty_preview }}"
+                        alt="Generated sketch preview placeholder"
+                    >
+                {% endif %}
+                <p class="footer-note">After conversion you can review the result here before downloading it.</p>
+            </article>
+        </section>
+    </main>
+
+    <script>
+        const fileInput = document.getElementById("image");
+        const originalPreview = document.getElementById("original-preview");
+        const form = document.getElementById("sketch-form");
+        const submitButton = document.getElementById("submit-button");
+        const statusMessage = document.getElementById("status-message");
+
+        fileInput.addEventListener("change", () => {
+            const [file] = fileInput.files;
+            if (!file) {
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                originalPreview.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        form.addEventListener("submit", () => {
+            submitButton.disabled = true;
+            submitButton.textContent = "Converting...";
+            statusMessage.textContent = "Converting image to sketch. This may take a moment.";
+        });
+    </script>
 </body>
 </html>
