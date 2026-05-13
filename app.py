@@ -147,11 +147,12 @@ def api_sketch():
         sketch_bytes, mimetype, output_format = convert_image_bytes_to_sketch(image_bytes, options)
     except ValidationError as exc:
         return jsonify({"error": exc.message}), 400
+    download_name = _build_download_name(original_name, output_format)
     return send_file(
         BytesIO(sketch_bytes),
         mimetype=mimetype,
         as_attachment=True,
-        download_name=_build_download_name(original_name, output_format),
+        download_name=download_name,
     )
 
 

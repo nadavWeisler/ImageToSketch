@@ -133,8 +133,12 @@ def convert_pic_to_sketch(
 ) -> Path:
     sketch_options = options or SketchOptions()
     source_path = Path(file_path)
-    target_path = Path(output_path) if output_path else source_path.with_name(
-        f"{source_path.stem}-sketch{SUPPORTED_OUTPUT_FORMATS[normalize_output_format(sketch_options.output_format)]['extension']}"
+    normalized_output_format = normalize_output_format(sketch_options.output_format)
+    output_extension = SUPPORTED_OUTPUT_FORMATS[normalized_output_format]["extension"]
+    target_path = (
+        Path(output_path)
+        if output_path
+        else source_path.with_name(f"{source_path.stem}-sketch{output_extension}")
     )
     sketch = pic_to_sketch(source_path, sketch_options)
     encoded_image, _ = encode_image(sketch, sketch_options.output_format)
