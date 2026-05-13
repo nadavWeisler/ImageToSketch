@@ -141,6 +141,7 @@ def home() -> str:
 
 @app.post("/api/sketch")
 def api_sketch():
+    """Convert a multipart image upload into a downloadable sketch file."""
     try:
         image_bytes, original_name = _read_upload()
         options = _parse_sketch_options(request.form)
@@ -158,6 +159,7 @@ def api_sketch():
 
 @app.get("/health")
 def health():
+    """Expose a lightweight health check for local monitoring and deployments."""
     return jsonify(
         {
             "status": "ok",
