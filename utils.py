@@ -15,6 +15,12 @@ SUPPORTED_OUTPUT_FORMATS = {
 }
 
 
+class ValidationError(ValueError):
+    def __init__(self, message: str):
+        super().__init__(message)
+        self.message = message
+
+
 @dataclass(frozen=True, slots=True)
 class SketchOptions:
     scale_percent: int = 60
@@ -32,13 +38,13 @@ def dodge_v2(image: np.ndarray, mask: np.ndarray) -> np.ndarray:
 def normalize_output_format(output_format: str) -> str:
     normalized = (output_format or "jpg").strip().lower()
     if normalized not in SUPPORTED_OUTPUT_FORMATS:
-        raise ValueError("Output format must be jpg or png.")
+        raise ValidationError("Output format must be jpg or png.")
     return normalized
 
 
 def normalize_blur_size(blur_size: int) -> int:
     if blur_size < 1:
-        raise ValueError("Blur size must be at least 1.")
+        raise ValidationError("Blur size must be at least 1.")
     return blur_size if blur_size % 2 == 1 else blur_size + 1
 
 
@@ -49,11 +55,11 @@ def is_supported_extension(filename: str, allowed_extensions: set[str] | tuple[s
 
 def _decode_image(image_bytes: bytes) -> np.ndarray:
     if not image_bytes:
-        raise ValueError("The uploaded image is empty.")
+        raise ValidationError("The uploaded image is empty.")
     buffer = np.frombuffer(image_bytes, dtype=np.uint8)
     decoded_image = cv2.imdecode(buffer, cv2.IMREAD_COLOR)
     if decoded_image is None:
-        raise ValueError("The uploaded file is not a valid image.")
+        raise ValidationError("The uploaded file is not a valid image.")
     return decoded_image
 
 
@@ -65,13 +71,17 @@ def _sharpen_kernel(amount: float) -> np.ndarray:
     )
 
 
+def _scaled_dimension(original_size: int, scale_percent: int) -> int:
+    return max(1, int(original_size * scale_percent / 100))
+
+
 def create_sketch(image: np.ndarray, options: SketchOptions) -> np.ndarray:
     if image is None or image.size == 0:
-        raise ValueError("Image data is missing.")
+        raise ValidationError("Image data is missing.")
 
     scale_percent = max(10, min(100, int(options.scale_percent)))
-    width = max(1, int(image.shape[1] * scale_percent / 100))
-    height = max(1, int(image.shape[0] * scale_percent / 100))
+    width = _scaled_dimension(image.shape[1], scale_percent)
+    height = _scaled_dimension(image.shape[0], scale_percent)
     resized = cv2.resize(image, (width, height), interpolation=cv2.INTER_AREA)
 
     if options.sharpen_amount > 0:
@@ -90,7 +100,7 @@ def encode_image(image: np.ndarray, output_format: str) -> tuple[bytes, str]:
     format_details = SUPPORTED_OUTPUT_FORMATS[normalized_output_format]
     success, encoded_image = cv2.imencode(format_details["encode_extension"], image)
     if not success:
-        raise ValueError("Unable to encode the converted sketch.")
+        raise ValidationError("Unable to encode the converted sketch.")
     return encoded_image.tobytes(), format_details["mimetype"]
 
 
@@ -112,7 +122,7 @@ def pic_to_sketch(file_path: str | Path, options: SketchOptions | None = None) -
     source_path = Path(file_path)
     image = cv2.imread(str(source_path))
     if image is None:
-        raise ValueError(f"Unable to read image: {source_path}")
+        raise ValidationError(f"Unable to read image: {source_path}")
     return create_sketch(image, options or SketchOptions())
 
 

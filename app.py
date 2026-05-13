@@ -11,6 +11,7 @@ import __data__ as data
 from config import Config
 from utils import (
     SketchOptions,
+    ValidationError,
     build_data_uri,
     convert_image_bytes_to_sketch,
     is_supported_extension,
@@ -56,9 +57,9 @@ def _coerce_int(raw_value: str, field_name: str, minimum: int, maximum: int) -> 
     try:
         value = int(raw_value)
     except (TypeError, ValueError) as exc:
-        raise ValueError(f"{field_name} must be a whole number.") from exc
+        raise ValidationError(f"{field_name} must be a whole number.") from exc
     if not minimum <= value <= maximum:
-        raise ValueError(f"{field_name} must be between {minimum} and {maximum}.")
+        raise ValidationError(f"{field_name} must be between {minimum} and {maximum}.")
     return value
 
 
@@ -66,9 +67,9 @@ def _coerce_float(raw_value: str, field_name: str, minimum: float, maximum: floa
     try:
         value = float(raw_value)
     except (TypeError, ValueError) as exc:
-        raise ValueError(f"{field_name} must be a number.") from exc
+        raise ValidationError(f"{field_name} must be a number.") from exc
     if not minimum <= value <= maximum:
-        raise ValueError(f"{field_name} must be between {minimum} and {maximum}.")
+        raise ValidationError(f"{field_name} must be between {minimum} and {maximum}.")
     return value
 
 
@@ -89,19 +90,19 @@ def _parse_sketch_options(form_data: dict[str, str]) -> SketchOptions:
 def _read_upload() -> tuple[bytes, str]:
     image_file = request.files.get("image")
     if image_file is None:
-        raise ValueError("Choose an image to convert.")
+        raise ValidationError("Choose an image to convert.")
 
     original_name = secure_filename(image_file.filename or "")
     if not original_name:
-        raise ValueError("Choose an image to convert.")
+        raise ValidationError("Choose an image to convert.")
     if not is_supported_extension(original_name, app.config["ALLOWED_EXTENSIONS"]):
-        raise ValueError(
+        raise ValidationError(
             f"Unsupported file type. Use one of: {', '.join(sorted(app.config['ALLOWED_EXTENSIONS']))}."
         )
 
     image_bytes = image_file.read()
     if not image_bytes:
-        raise ValueError("The uploaded image is empty.")
+        raise ValidationError("The uploaded image is empty.")
     return image_bytes, original_name
 
 
@@ -110,9 +111,9 @@ def _guess_input_mimetype(filename: str) -> str:
 
 
 def _build_download_name(filename: str, output_format: str) -> str:
-    safe_name = Path(filename).stem or "sketch"
+    filename_stem = Path(filename).stem or "sketch"
     extension = "png" if output_format == "png" else "jpg"
-    return f"{safe_name}-sketch.{extension}"
+    return f"{filename_stem}-sketch.{extension}"
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -126,8 +127,8 @@ def home() -> str:
         image_bytes, original_name = _read_upload()
         options = _parse_sketch_options(request.form)
         sketch_bytes, mimetype, output_format = convert_image_bytes_to_sketch(image_bytes, options)
-    except ValueError as exc:
-        return _render_home(form_values=form_values, error_message=str(exc))
+    except ValidationError as exc:
+        return _render_home(form_values=form_values, error_message=exc.message)
 
     return _render_home(
         form_values=form_values,
@@ -144,8 +145,8 @@ def api_sketch():
         image_bytes, original_name = _read_upload()
         options = _parse_sketch_options(request.form)
         sketch_bytes, mimetype, output_format = convert_image_bytes_to_sketch(image_bytes, options)
-    except ValueError:
-        return jsonify({"error": "Invalid request. Check the file type and sketch settings."}), 400
+    except ValidationError as exc:
+        return jsonify({"error": exc.message}), 400
     return send_file(
         BytesIO(sketch_bytes),
         mimetype=mimetype,
